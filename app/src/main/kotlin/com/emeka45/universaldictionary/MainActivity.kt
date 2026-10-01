@@ -93,51 +93,97 @@ private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLarge
 }
 
 @Composable private fun HomeScreen(query:String,onQuery:(String)->Unit,suggestions:List<String>,onSuggestions:(List<String>)->Unit,loading:Boolean,error:String?,entry:DictionaryEntry?,saved:Set<String>,onSave:(String)->Unit,onLookup:()->Unit,onSuggestion:(String)->Unit,onSpeak:(String?)->Unit,onCopy:(DictionaryEntry)->Unit,onShare:(DictionaryEntry)->Unit,repo:DictionaryRepository,modifier:Modifier){
-    val scope=rememberCoroutineScope()
-    LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-        item{OutlinedTextField(value=query,onValueChange={onQuery(it);if(it.trim().length>=2)scope.launch{onSuggestions(repo.suggestions(it))}},modifier=Modifier.fillMaxWidth(),singleLine=true,label={Text("Search any word")},leadingIcon={Icon(Icons.Default.Search,null)},trailingIcon={if(loading)CircularProgressIndicator(Modifier.size(22.dp))else IconButton(onClick=onLookup){Icon(Icons.Default.Search,"Look up")}})}
-        if(suggestions.isNotEmpty())item{Card{Column(Modifier.fillMaxWidth()){suggestions.forEach{s->Text(s,Modifier.fillMaxWidth().clickable{onSuggestion(s)}.padding(14.dp))}}}}
+    val scroll=rememberScrollState()
+    val categories=remember{SpecialistDictionary.categories().take(8)}
+    LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(16.dp)){
+        item{
+            Column(verticalArrangement=Arrangement.spacedBy(6.dp)){
+                Text("Find the right word.",style=MaterialTheme.typography.headlineLarge)
+                Text("Definitions, pronunciation, specialist terms and learning tools.",color=MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        item{
+            OutlinedTextField(
+                value=query,onValueChange=onQuery,modifier=Modifier.fillMaxWidth(),singleLine=true,
+                shape=RoundedCornerShape(22.dp),placeholder={Text("Search a word, term or phrase")},
+                leadingIcon={Icon(Icons.Default.Search,"Search")},
+                trailingIcon={Row(verticalAlignment=Alignment.CenterVertically){
+                    if(query.isNotBlank())IconButton(onClick={onQuery("")}){Icon(Icons.Default.Close,"Clear")}
+                    if(loading)CircularProgressIndicator(Modifier.size(22.dp))else IconButton(onClick=onLookup){Icon(Icons.Default.ArrowForward,"Look up")}
+                }}
+            )
+        }
+        if(suggestions.isNotEmpty())item{
+            ElevatedCard{Column(Modifier.padding(vertical=6.dp)){
+                Text("Smart suggestions",Modifier.padding(horizontal=16.dp,vertical=8.dp),style=MaterialTheme.typography.labelLarge)
+                suggestions.take(8).forEach{s->ListItem(headlineContent={Text(s,fontWeight=FontWeight.SemiBold)},leadingContent={Icon(Icons.Default.Search,null)},modifier=Modifier.clickable{onSuggestion(s)})}
+            }}
+        }
         item{WordOfDayCard(repo,onSuggestion)}
+        item{
+            OutlinedCard(shape=RoundedCornerShape(22.dp)){Column(Modifier.padding(18.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
+                Row(verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.LocalFireDepartment,null);Spacer(Modifier.width(8.dp));Text("Learning momentum",fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text("${repo.hashCode().let{""}}")}
+                Text("Use Quiz and Saved to turn lookups into active vocabulary practice.",style=MaterialTheme.typography.bodySmall)
+            }}
+        }
+        item{Text("Explore by field",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}
+        item{Row(Modifier.horizontalScroll(scroll),horizontalArrangement=Arrangement.spacedBy(8.dp)){categories.forEach{category->AssistChip(onClick={SpecialistDictionary.words(category).firstOrNull()?.let(onSuggestion)},label={Text(category)},leadingIcon={Icon(Icons.Default.AutoStories,null)})}}}
+        error?.let{msg->item{OutlinedCard{Column(Modifier.padding(16.dp)){Text("We couldn't find that word",fontWeight=FontWeight.Bold,color=MaterialTheme.colorScheme.error);Text(msg);Text("Check spelling or choose a smart suggestion.")}}}}
         if(entry==null&&error==null)item{WelcomeCard()}
-        error?.let{msg->item{OutlinedCard{Column(Modifier.padding(16.dp)){Text(msg,color=MaterialTheme.colorScheme.error,fontWeight=FontWeight.Bold);Text("Try a suggestion or check your connection.")}}}}
         entry?.let{e->item{EntryCard(e,saved.contains(e.word.lowercase()),{onSave(e.word)},{onSpeak(e.audioUrl)},{onCopy(e)},{onShare(e)})}}
     }
-}
-@Composable private fun WordOfDayCard(repo:DictionaryRepository,onWord:(String)->Unit){val word=remember{repo.wordOfTheDay()};Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.tertiaryContainer)){Column(Modifier.padding(18.dp)){Text("WORD OF THE DAY",style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.Bold);Text(word,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);TextButton(onClick={onWord(word)}){Text("Explore today's word")}}}}
+}\n@Composable private fun WordOfDayCard(repo:DictionaryRepository,onWord:(String)->Unit){val word=remember{repo.wordOfTheDay()};Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.tertiaryContainer)){Column(Modifier.padding(18.dp)){Text("WORD OF THE DAY",style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.Bold);Text(word,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);TextButton(onClick={onWord(word)}){Text("Explore today's word")}}}}
 @Composable private fun WelcomeCard(){Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.primaryContainer)){Column(Modifier.padding(22.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Your words, everywhere.",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text("Definitions, examples, synonyms, antonyms, pronunciation, specialist terms and learning tools.");Text("Select text in another app and choose Universal Dictionary.")}}}
-@Composable private fun EntryCard(e:DictionaryEntry,saved:Boolean,onSave:()->Unit,onSpeak:()->Unit,onCopy:()->Unit,onShare:()->Unit){Card(shape=RoundedCornerShape(24.dp)){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(e.word,style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Bold);e.phonetic?.let{Text(it)}};IconButton(onClick=onSpeak,enabled=e.audioUrl!=null){Icon(Icons.Default.VolumeUp,"Pronunciation")};IconButton(onClick=onSave){Icon(if(saved)Icons.Default.Bookmark else Icons.Default.BookmarkBorder,"Save")}};Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){OutlinedButton(onClick=onCopy){Icon(Icons.Default.ContentCopy,null);Spacer(Modifier.width(5.dp));Text("Copy")};OutlinedButton(onClick=onShare){Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")}};e.origin?.let{Text("Origin",fontWeight=FontWeight.Bold);Text(it)};WordForms(e.word);e.definitions.forEachIndexed{i,d->Column{Text((i+1).toString()+". "+d.partOfSpeech,fontWeight=FontWeight.Bold);Text(d.text);d.example?.let{Text("Example: "+it)};if(d.synonyms.isNotEmpty())Text("Synonyms: "+d.synonyms.joinToString(", "));if(d.antonyms.isNotEmpty())Text("Antonyms: "+d.antonyms.joinToString(", "))}};Text("Source: "+e.source,style=MaterialTheme.typography.labelMedium)}}}
-@Composable private fun WordForms(word:String){val f=when{word.endsWith("y")&&word.length>2->"Possible plural: "+word.dropLast(1)+"ies";word.endsWith("ing")->"Possible base form: "+word.dropLast(3);word.endsWith("ed")->"Possible base form: "+word.dropLast(2);else->""};if(f.isNotBlank())Text(f,style=MaterialTheme.typography.labelMedium)}
+@Composable private fun EntryCard(e:DictionaryEntry,saved:Boolean,onSave:()->Unit,onSpeak:()->Unit,onCopy:()->Unit,onShare:()->Unit){
+    Card(shape=RoundedCornerShape(28.dp)){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(15.dp)){
+        Row(verticalAlignment=Alignment.Top){
+            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)){Text(e.word,style=MaterialTheme.typography.displaySmall,fontWeight=FontWeight.Bold);e.phonetic?.let{Text(it,color=MaterialTheme.colorScheme.primary,style=MaterialTheme.typography.titleMedium)};Text(e.definitions.firstOrNull()?.partOfSpeech?:"word",style=MaterialTheme.typography.labelLarge)}
+            IconButton(onClick=onSpeak){Icon(Icons.Default.VolumeUp,"Pronounce")}
+            IconButton(onClick=onSave){Icon(if(saved)Icons.Default.Bookmark else Icons.Default.BookmarkBorder,"Save")}
+        }
+        Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){FilledTonalButton(onClick=onSpeak){Icon(Icons.Default.RecordVoiceOver,null);Spacer(Modifier.width(5.dp));Text("Listen")};OutlinedButton(onClick=onCopy){Icon(Icons.Default.ContentCopy,null);Spacer(Modifier.width(5.dp));Text("Copy")};OutlinedButton(onClick=onShare){Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")}}
+        e.origin?.let{Text("Origin",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold);Text(it)}
+        WordForms(e.word)
+        e.definitions.forEachIndexed{i,d->Column(verticalArrangement=Arrangement.spacedBy(7.dp)){
+            Text("${i+1}. ${d.partOfSpeech}",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+            Text(d.text,style=MaterialTheme.typography.bodyLarge)
+            d.example?.let{Surface(color=MaterialTheme.colorScheme.surfaceContainer,shape=RoundedCornerShape(16.dp)){Text("“${it}”",Modifier.padding(13.dp))}}
+            if(d.synonyms.isNotEmpty()){Text("Synonyms",fontWeight=FontWeight.SemiBold);Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){d.synonyms.distinct().take(10).forEach{AssistChip(onClick={},label={Text(it)})}}}
+            if(d.antonyms.isNotEmpty()){Text("Antonyms",fontWeight=FontWeight.SemiBold);Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(6.dp)){d.antonyms.distinct().take(10).forEach{AssistChip(onClick={},label={Text(it)})}}}
+        }}
+        Surface(color=MaterialTheme.colorScheme.secondaryContainer,shape=RoundedCornerShape(18.dp)){Column(Modifier.padding(13.dp)){Text("Word intelligence",fontWeight=FontWeight.Bold);Text("Related words, word forms and usage clues are grouped here to help you learn beyond a single definition.",style=MaterialTheme.typography.bodySmall)}}
+        Text("Source: ${e.source}",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
+    }}
+}\n@Composable private fun WordForms(word:String){val f=when{word.endsWith("y")&&word.length>2->"Possible plural: "+word.dropLast(1)+"ies";word.endsWith("ing")->"Possible base form: "+word.dropLast(3);word.endsWith("ed")->"Possible base form: "+word.dropLast(2);else->""};if(f.isNotBlank())Text(f,style=MaterialTheme.typography.labelMedium)}
 @Composable private fun WordListScreen(title:String,subtitle:String,words:List<String>,onWord:(String)->Unit,onClear:()->Unit,modifier:Modifier){LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){item{Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(title,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(subtitle)}if(words.isNotEmpty())TextButton(onClick=onClear){Text("Clear")}}};if(words.isEmpty())item{WelcomeCard()};items(words.distinct()){w->ListItem(headlineContent={Text(w)},leadingContent={Icon(Icons.Default.Book,null)},modifier=Modifier.clickable{onWord(w)});HorizontalDivider()}}}
 @Composable private fun QuizScreen(onWord:(String)->Unit,modifier:Modifier){
     val pool=remember{OfflineDictionary.words().mapNotNull(OfflineDictionary::get)}
     var mode by remember{mutableStateOf("Definition")}
-    var entry by remember{mutableStateOf(pool.first())}
+    var answer by remember{mutableStateOf(pool.first())}
     var options by remember{mutableStateOf(emptyList<String>())}
     var chosen by remember{mutableStateOf<String?>(null)}
     var score by remember{mutableIntStateOf(0)}
     var answered by remember{mutableIntStateOf(0)}
-    fun correct():String=when(mode){"Synonym"->entry.synonyms.firstOrNull();"Antonym"->entry.antonyms.firstOrNull();else->entry.word} ?: entry.word
-    fun question(){
-        entry=pool.random()
-        val answer=correct()
-        options=(listOf(answer)+pool.mapNotNull{e->when(mode){"Synonym"->e.synonyms.firstOrNull();"Antonym"->e.antonyms.firstOrNull();else->e.word}}.filter{it!=answer}.shuffled().take(3)).shuffled()
-        chosen=null
+    fun correct():String=when(mode){"Synonym"->answer.synonyms.firstOrNull();"Antonym"->answer.antonyms.firstOrNull();else->answer.word}?:answer.word
+    fun next(){
+        val eligible=when(mode){"Synonym"->pool.filter{it.synonyms.isNotEmpty()};"Antonym"->pool.filter{it.antonyms.isNotEmpty()};else->pool}
+        answer=eligible.random();val right=correct()
+        val wrong=pool.map{it.word}.filter{it!=right}.shuffled().take(3)
+        options=(listOf(right)+wrong).distinct().shuffled();chosen=null
     }
-    LaunchedEffect(mode){question()}
+    LaunchedEffect(mode){next()}
     LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
-        item{Text("Vocabulary Lab",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text("Practice definitions, synonyms, antonyms, and spelling.")}
-        item{Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("Definition","Synonym","Antonym","Spelling").forEach{m->FilterChip(selected=mode==m,onClick={mode=m},label={Text(m)})}}}
-        item{Text("Score: $"+score+" / "+answered,style=MaterialTheme.typography.labelLarge)}
-        item{Card{Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
-            Text(when(mode){"Synonym"->"Choose the synonym for “"+entry.word+"”.";"Antonym"->"Choose the antonym for “"+entry.word+"”.";"Spelling"->"Which spelling matches this word?";else->"Choose the word matching this definition."},fontWeight=FontWeight.Bold)
-            if(mode=="Definition") Text(entry.definitions.firstOrNull()?.text.orEmpty())
-            if(mode=="Spelling") Text("Select the correctly spelled form.")
-            options.forEach{o->Button(onClick={if(chosen==null){chosen=o;answered++;if(o==correct())score++}},enabled=chosen==null,modifier=Modifier.fillMaxWidth().padding(vertical=3.dp)){Text(o)}}
-            chosen?.let{Text(if(it==correct())"Correct! 🎉" else "Correct answer: "+correct(),fontWeight=FontWeight.Bold);TextButton(onClick={question()}){Text("Next question")};TextButton(onClick={onWord(entry.word)}){Text("Study word")}}
+        item{Text("Vocabulary Lab",style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Bold);Text("Definitions, synonyms, antonyms and spelling practice.")}
+        item{Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(7.dp)){listOf("Definition","Synonym","Antonym","Spelling").forEach{m->FilterChip(selected=mode==m,onClick={mode=m},label={Text(m)})}}}
+        item{OutlinedCard{Row(Modifier.padding(16.dp),verticalAlignment=Alignment.CenterVertically){Text("Score",fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text("${score} / ${answered}",style=MaterialTheme.typography.titleLarge)}}}
+        item{Card(shape=RoundedCornerShape(28.dp)){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+            Text(when(mode){"Synonym"->"Choose the synonym for “${answer.word}”.";"Antonym"->"Choose the antonym for “${answer.word}”.";"Spelling"->"Choose the correctly spelled word.";"Definition"->"Choose the word matching this definition."},fontWeight=FontWeight.Bold)
+            if(mode=="Definition")Text(answer.definitions.firstOrNull()?.text.orEmpty())
+            options.forEach{o->OutlinedButton(onClick={if(chosen==null){chosen=o;answered++;if(o==correct())score++}},enabled=chosen==null,modifier=Modifier.fillMaxWidth()){Text(o)}}
+            chosen?.let{Text(if(it==correct())"Correct! 🎉" else "Correct answer: ${correct()}",fontWeight=FontWeight.Bold);Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={next()}){Text("Next")};OutlinedButton(onClick={onWord(answer.word)}){Text("Study word")}}}
         }}}
     }
-}
-@Composable private fun MoreScreen(streak:Int,lookups:Int,onWord:(String)->Unit,modifier:Modifier,onDarkMode:(Boolean)->Unit,onLargeText:(Boolean)->Unit){
+}\n@Composable private fun MoreScreen(streak:Int,lookups:Int,onWord:(String)->Unit,modifier:Modifier,onDarkMode:(Boolean)->Unit,onLargeText:(Boolean)->Unit){
     val context=LocalContext.current
     val scope=rememberCoroutineScope()
     var category by remember{mutableStateOf(SpecialistDictionary.categories().first())}
