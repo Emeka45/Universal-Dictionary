@@ -35,12 +35,13 @@ class DictionaryRepository(private val context: Context, private val client: OkH
                 .header("Accept", "application/json")
                 .build()
             client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) error("No entry found for \\$word.")
+                if (!response.isSuccessful) { val near=nearest(word); if(near!=null) error("No entry for \""+word+"\". Did you mean \""+near+"\"?"); error("No entry found for \""+word+"\". Check the spelling.") }
                 parse(response.body?.string() ?: "[]").firstOrNull()
-                    ?: error("No entry found for \\$word.")
+                    ?: error("No entry found for \""+word+"\".")
             }.also {
                 synchronized(cache) { cache[word] = it }
                 saveHistory(word)
+                recordLearning()
             }
         }
     }
@@ -55,7 +56,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
                 val arr = JSONArray(response.body?.string() ?: "[]")
                 buildList { for (i in 0 until arr.length()) arr.optJSONObject(i)?.optString("word")?.takeIf(String::isNotBlank)?.let(::add) }
             }
-        }.getOrDefault(emptyList())
+        }.getOrElse { (OfflineDictionary.words()+SpecialistDictionary.categories().flatMap { SpecialistDictionary.words(it) }).filter { it.startsWith(input.trim().lowercase(Locale.US)) }.distinct().take(8) }
     }
 
     suspend fun streak(): Int = context.dictionaryDataStore.data.first()[STREAK] ?: 0
@@ -89,7 +90,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
         }
     }
 
-    private fun parse(json: String): List<DictionaryEntry> {
+    private fun nearest(word:String):String? { val all=OfflineDictionary.words()+SpecialistDictionary.categories().flatMap{SpecialistDictionary.words(it)}+cache.keys; return all.minByOrNull{distance(word,it)}?.takeIf{distance(word,it)<=maxOf(2,word.length/3)} }\n    private fun distance(a:String,b:String):Int { val d=IntArray(b.length+1){it}; for(i in a.indices){var prev=d[0];d[0]=i+1;for(j in b.indices){val cur=d[j+1];d[j+1]=minOf(d[j+1]+1,d[j]+1,prev+if(a[i]==b[j])0 else 1);prev=cur}};return d[b.length] }\n\n    private fun parse(json: String): List<DictionaryEntry> {
         val root = JSONArray(json)
         return buildList {
             for (i in 0 until root.length()) {
