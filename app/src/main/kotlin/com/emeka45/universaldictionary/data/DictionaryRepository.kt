@@ -107,7 +107,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
         }
     }
 
-    private fun nearest(word:String):String? { val all=OfflineDictionary.words()+SpecialistDictionary.categories().flatMap{SpecialistDictionary.words(it)}+cache.keys; return all.minByOrNull{distance(word,it)}?.takeIf{distance(word,it)<=maxOf(2,word.length/3)} }\n    private fun distance(a:String,b:String):Int { val d=IntArray(b.length+1){it}; for(i in a.indices){var prev=d[0];d[0]=i+1;for(j in b.indices){val cur=d[j+1];d[j+1]=minOf(d[j+1]+1,d[j]+1,prev+if(a[i]==b[j])0 else 1);prev=cur}};return d[b.length] }\n\n    private fun parse(json: String): List<DictionaryEntry> {
+    private fun nearest(word:String):String? { val all=OfflineDictionary.words()+SpecialistDictionary.categories().flatMap{SpecialistDictionary.words(it)}+cache.keys; return all.minByOrNull{distance(word,it)}?.takeIf{distance(word,it)<=maxOf(2,word.length/3)} }    private fun distance(a:String,b:String):Int { val d=IntArray(b.length+1){it}; for(i in a.indices){var prev=d[0];d[0]=i+1;for(j in b.indices){val cur=d[j+1];d[j+1]=minOf(d[j+1]+1,d[j]+1,prev+if(a[i]==b[j])0 else 1);prev=cur}};return d[b.length] }    private fun parse(json: String): List<DictionaryEntry> {
         val root = JSONArray(json)
         return buildList {
             for (i in 0 until root.length()) {
