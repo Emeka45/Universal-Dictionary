@@ -21,6 +21,7 @@ private val Context.dictionaryDataStore by preferencesDataStore("dictionary_pref
 
 class DictionaryRepository(private val context: Context, private val client: OkHttpClient = OkHttpClient()) {
     private val cache = LinkedHashMap<String, DictionaryEntry>(50, 0.75f, true)
+    private val website = WebsiteDictionary(client)
     private val bundled = BundledDictionary(context)
 
     suspend fun lookup(input: String): Result<DictionaryEntry> = withContext(Dispatchers.IO) {
@@ -30,6 +31,9 @@ class DictionaryRepository(private val context: Context, private val client: OkH
         OfflineDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
         ExpandedOfflineDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
         SpecialistDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
+        // The website is the canonical online dictionary source.
+        website.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
+        // Keep the bundled pack as a resilience layer for offline use or temporary outages.
         bundled.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
         runCatching {
             val encoded = URLEncoder.encode(word, "UTF-8")
@@ -74,6 +78,8 @@ class DictionaryRepository(private val context: Context, private val client: OkH
     suspend fun suggestions(input: String): List<String> = withContext(Dispatchers.IO) {
         if (input.trim().length < 2) return@withContext emptyList()
         runCatching {
+            val websiteSuggestions = website.suggestions(input)
+            if (websiteSuggestions.isNotEmpty()) return@runCatching websiteSuggestions
             val local = bundled.suggestions(input)
             if (local.isNotEmpty()) return@runCatching local
             val encoded = URLEncoder.encode(input.trim(), "UTF-8")
