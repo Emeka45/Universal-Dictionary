@@ -179,7 +179,7 @@ private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLarge
         item{Row(Modifier.horizontalScroll(rememberScrollState()),horizontalArrangement=Arrangement.spacedBy(7.dp)){listOf("Definition","Synonym","Antonym","Spelling").forEach{m->FilterChip(selected=mode==m,onClick={mode=m},label={Text(m)})}}}
         item{OutlinedCard{Row(Modifier.padding(16.dp),verticalAlignment=Alignment.CenterVertically){Text("Score",fontWeight=FontWeight.Bold);Spacer(Modifier.weight(1f));Text("${score} / ${answered}",style=MaterialTheme.typography.titleLarge)}}}
         item{Card(shape=RoundedCornerShape(28.dp)){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
-            Text(when(mode){"Synonym"->"Choose the synonym for “${answer.word}”.";"Antonym"->"Choose the antonym for “${answer.word}”.";"Spelling"->"Choose the correctly spelled word.";"Definition"->"Choose the word matching this definition."},fontWeight=FontWeight.Bold)
+            Text(when(mode){"Synonym"->"Choose the synonym for “${answer.word}”.";"Antonym"->"Choose the antonym for “${answer.word}”.";"Spelling"->"Choose the correctly spelled word.";"Definition"->"Choose the word matching this definition.";else->"Choose the best answer."},fontWeight=FontWeight.Bold)
             if(mode=="Definition")Text(answer.definitions.firstOrNull()?.text.orEmpty())
             options.forEach{o->OutlinedButton(onClick={if(chosen==null){chosen=o;answered++;if(o==correct())score++}},enabled=chosen==null,modifier=Modifier.fillMaxWidth()){Text(o)}}
             chosen?.let{Text(if(it==correct())"Correct! 🎉" else "Correct answer: ${correct()}",fontWeight=FontWeight.Bold);Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={next()}){Text("Next")};OutlinedButton(onClick={onWord(answer.word)}){Text("Study word")}}}
@@ -204,5 +204,16 @@ private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLarge
         item{OutlinedCard{Column(Modifier.padding(16.dp)){Text("Free/open data policy",fontWeight=FontWeight.Bold);Text("No proprietary dictionary credentials or databases are used. Open resources require compatible licensing and attribution.")}}}
     }
 }
-private fun entryText(e:DictionaryEntry)=buildString{append(e.word);e.phonetic?.let{append(" ");append(it)};appendLine();e.definitions.forEachIndexed{i,d->{append(i+1);append(". ");append(d.partOfSpeech);append(": ");appendLine(d.text);d.example?.let{append("Example: ");appendLine(it)};if(d.synonyms.isNotEmpty()){append("Synonyms: ");appendLine(d.synonyms.joinToString(", "))};if(d.antonyms.isNotEmpty()){append("Antonyms: ");appendLine(d.antonyms.joinToString(", "))}};append("Source: ");append(e.source)}
+private fun entryText(e:DictionaryEntry)=buildString{
+    append(e.word)
+    e.phonetic?.let{append(" ");append(it)}
+    appendLine()
+    e.definitions.forEachIndexed{i,d->
+        append(i+1);append(". ");append(d.partOfSpeech);append(": ");appendLine(d.text)
+        d.example?.let{append("Example: ");appendLine(it)}
+        if(d.synonyms.isNotEmpty()){append("Synonyms: ");appendLine(d.synonyms.joinToString(", "))}
+        if(d.antonyms.isNotEmpty()){append("Antonyms: ");appendLine(d.antonyms.joinToString(", "))}
+    }
+    append("Source: ");append(e.source)
+}
 private fun playAudio(url:String?){if(url.isNullOrBlank())return;runCatching{MediaPlayer().apply{setDataSource(url);prepareAsync();setOnPreparedListener{it.start()};setOnCompletionListener{it.release()};setOnErrorListener{mp,_,_->mp.release();true}}}}
