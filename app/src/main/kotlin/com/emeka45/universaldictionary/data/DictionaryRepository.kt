@@ -103,7 +103,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
         context.dictionaryDataStore.edit{p->p[SAVED]=p[SAVED].orEmpty().plus(words)}
     }
 
-    fun wordOfTheDay(): String { val words=(OfflineDictionary.words()+listOf("adroit","audacious","candid","cogent","dormant","fortuitous","lucid","nuance","pragmatic","tenacious")).sorted(); return words[(System.currentTimeMillis()/86400000L % words.size).toInt()] }
+    fun wordOfTheDay(): String { val words=(OfflineDictionary.words()+ExpandedOfflineDictionary.words()+SpecialistDictionary.allWords()).distinct().sorted(); return words[(System.currentTimeMillis()/86400000L % words.size).toInt()] }
     suspend fun recordLearning() { val today=System.currentTimeMillis()/86400000L; context.dictionaryDataStore.edit { p -> val last=p[LAST_DAY]; if(last!=today){ val old=p[STREAK]?:0; p[STREAK]=if(last==today-1) old+1 else 1; p[LAST_DAY]=today }; p[LOOKUPS]=(p[LOOKUPS]?:0)+1 } }
 
     suspend fun savedWords(): Set<String> = context.dictionaryDataStore.data.first()[SAVED].orEmpty()
