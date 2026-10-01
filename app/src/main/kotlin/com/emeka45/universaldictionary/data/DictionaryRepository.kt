@@ -103,7 +103,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
             val h = p[HISTORY].orEmpty().toMutableSet()
             h.remove(word)
             h.add(word)
-            p[HISTORY] = h.takeLast(30).toSet()
+            p[HISTORY] = h.toList().takeLast(30).toSet()
         }
     }
 
