@@ -11,7 +11,8 @@ import android.speech.tts.TextToSpeech
 import android.Manifest
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.compose.rememberLauncherForActivityResult\nimport androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,7 +29,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.emeka45.universaldictionary.data.DictionaryRepository
 import com.emeka45.universaldictionary.data.OfflineDictionary
-import com.emeka45.universaldictionary.data.SpecialistDictionary\nimport com.emeka45.universaldictionary.data.SettingsStore
+import com.emeka45.universaldictionary.data.SpecialistDictionary
+import com.emeka45.universaldictionary.data.SettingsStore
 import com.emeka45.universaldictionary.model.DictionaryEntry
 import com.emeka45.universaldictionary.ui.UniversalDictionaryTheme
 import kotlinx.coroutines.launch
@@ -45,7 +47,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DictionaryApp(incoming: String?) {
+private fun DictionarySettingsHost(incoming:String?) {\n    val context=LocalContext.current\n    val settings=remember{SettingsStore(context.applicationContext)}\n    var dark by remember{mutableStateOf(settings.darkMode())}\n    var large by remember{mutableStateOf(settings.largeText())}\n    UniversalDictionaryTheme(darkOverride=dark,largeText=large){\n        DictionaryApp(incoming,{dark=it;settings.setDarkMode(it)},{large=it;settings.setLargeText(it)})\n    }\n}\n\n@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nprivate fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLargeText:(Boolean)->Unit) {
     val context=LocalContext.current
     val repo=remember{DictionaryRepository(context.applicationContext)}
     val scope=rememberCoroutineScope()
@@ -107,7 +109,8 @@ private fun DictionaryApp(incoming: String?) {
         item{Card(shape=RoundedCornerShape(22.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.secondaryContainer)){Column(Modifier.padding(20.dp)){Text("Learning dashboard",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(streak.toString()+" day learning streak");Text(lookups.toString()+" lookups recorded")}}}
         item{OutlinedCard{Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("Vocabulary backup",fontWeight=FontWeight.Bold);Text("Move your saved vocabulary between devices.");Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={export.launch("universal-dictionary-vocabulary.txt")}){Text("Export")};OutlinedButton(onClick={import.launch(arrayOf("text/plain","text/*"))}){Text("Import")}}}}}
         item{OutlinedCard{Column(Modifier.padding(16.dp)){Text("Daily learning reminder",fontWeight=FontWeight.Bold);Text("Receive a daily Word of the Day notification at about 8:00 PM.");Button(onClick={if(android.os.Build.VERSION.SDK_INT>=33)permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) else ReminderHelper.enable(context)},modifier=Modifier.padding(top=8.dp)){Text("Enable reminder")};TextButton(onClick={ReminderHelper.cancel(context)}){Text("Turn off")}}}}
-        item{val settings=remember{SettingsStore(LocalContext.current.applicationContext)};var dark by remember{mutableStateOf(settings.darkMode())};var large by remember{mutableStateOf(settings.largeText())};OutlinedCard{Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){Text("Accessibility & appearance",fontWeight=FontWeight.Bold);Text("Adjust readability and theme without changing system settings.");Row(verticalAlignment=Alignment.CenterVertically){Text("Dark mode",Modifier.weight(1f));Switch(checked=dark,onCheckedChange={dark=it;onDarkMode(it)})};Row(verticalAlignment=Alignment.CenterVertically){Text("Larger text",Modifier.weight(1f));Switch(checked=large,onCheckedChange={large=it;onLargeText(it)})};Text("TalkBack and system font settings remain supported.")}}}\n        item{Text("Specialist & Nigerian vocabulary",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}
+        item{val settings=remember{SettingsStore(LocalContext.current.applicationContext)};var dark by remember{mutableStateOf(settings.darkMode())};var large by remember{mutableStateOf(settings.largeText())};OutlinedCard{Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){Text("Accessibility & appearance",fontWeight=FontWeight.Bold);Text("Adjust readability and theme without changing system settings.");Row(verticalAlignment=Alignment.CenterVertically){Text("Dark mode",Modifier.weight(1f));Switch(checked=dark,onCheckedChange={dark=it;onDarkMode(it)})};Row(verticalAlignment=Alignment.CenterVertically){Text("Larger text",Modifier.weight(1f));Switch(checked=large,onCheckedChange={large=it;onLargeText(it)})};Text("TalkBack and system font settings remain supported.")}}}
+        item{Text("Specialist & Nigerian vocabulary",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}
         items(categories){c->FilterChip(selected=category==c,onClick={category=c},label={Text(c)})}
         items(SpecialistDictionary.words(category)){w->ListItem(headlineContent={Text(w)},supportingContent={Text(category)},modifier=Modifier.clickable{onWord(w)})}
         item{OutlinedCard{Column(Modifier.padding(16.dp)){Text("Free/open data policy",fontWeight=FontWeight.Bold);Text("No proprietary dictionary credentials or databases are used. Open resources require compatible licensing and attribution.")}}}
