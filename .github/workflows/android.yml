@@ -17,6 +17,8 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
+      - name: Build 260k+ offline dictionary pack
+        run: python3 scripts/build_dictionary_pack.py
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
