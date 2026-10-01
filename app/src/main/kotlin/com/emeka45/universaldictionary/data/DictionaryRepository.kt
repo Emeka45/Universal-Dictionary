@@ -45,12 +45,10 @@ class DictionaryRepository(private val context: Context, private val client: OkH
                 if (!response.isSuccessful) { val near=nearest(word); if(near!=null) error("No entry for \""+word+"\". Did you mean \""+near+"\"?"); error("No entry found for \""+word+"\". Check the spelling.") }
                 parse(response.body?.string() ?: "[]").firstOrNull()
                     ?: error("No entry found for \""+word+"\".")
-            }.also { result ->
-                result.getOrNull()?.let { entry -> synchronized(cache) { cache[word] = entry } }
-                if (result.isSuccess) {
-                    saveHistory(word)
-                    recordLearning()
-                }
+            }.also {
+                synchronized(cache) { cache[word] = it }
+                saveHistory(word)
+                recordLearning()
             }
         }.recoverCatching {
             lookupExpandedOnline(word) ?: run {
