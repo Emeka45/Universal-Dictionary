@@ -4,6 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 android {
+    compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     namespace = "com.emeka45.universaldictionary"
     compileSdk = 35
     defaultConfig {
@@ -14,6 +15,7 @@ android {
         versionName = "1.0.0"
     }
     buildFeatures { compose = true; buildConfig = true }
+    kotlinOptions { jvmTarget = "17" }
     buildTypes { release { isMinifyEnabled = false } }
 }
 dependencies {
