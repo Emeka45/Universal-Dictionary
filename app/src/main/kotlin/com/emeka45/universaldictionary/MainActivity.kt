@@ -28,7 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.emeka45.universaldictionary.data.DictionaryRepository
 import com.emeka45.universaldictionary.data.OfflineDictionary
-import com.emeka45.universaldictionary.data.SpecialistDictionary
+import com.emeka45.universaldictionary.data.SpecialistDictionary\nimport com.emeka45.universaldictionary.data.SettingsStore
 import com.emeka45.universaldictionary.model.DictionaryEntry
 import com.emeka45.universaldictionary.ui.UniversalDictionaryTheme
 import kotlinx.coroutines.launch
@@ -39,7 +39,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val incoming = if (intent?.action == Intent.ACTION_PROCESS_TEXT) intent.getCharSequenceExtra(Intent.EXTRA_PROCESS_TEXT)?.toString()?.trim() else null
-        setContent { UniversalDictionaryTheme { DictionaryApp(incoming) } }
+        setContent { DictionarySettingsHost(incoming) }
     }
 }
 
@@ -73,7 +73,7 @@ private fun DictionaryApp(incoming: String?) {
             1->WordListScreen("Saved words","Your personal vocabulary collection",saved.toList().sorted(),{lookup(it);tab=0},{scope.launch{repo.clearSaved();refresh()}},Modifier.padding(padding))
             2->WordListScreen("Search history","Your latest lookups",history,{lookup(it);tab=0},{scope.launch{repo.clearHistory();refresh()}},Modifier.padding(padding))
             3->QuizScreen({lookup(it);tab=0},Modifier.padding(padding))
-            else->MoreScreen(streak,lookups,{lookup(it);tab=0},Modifier.padding(padding))
+            else->MoreScreen(streak,lookups,{lookup(it);tab=0},Modifier.padding(padding),onDarkMode,onLargeText)
         }
     }
 }
@@ -95,7 +95,7 @@ private fun DictionaryApp(incoming: String?) {
 @Composable private fun WordForms(word:String){val f=when{word.endsWith("y")&&word.length>2->"Possible plural: "+word.dropLast(1)+"ies";word.endsWith("ing")->"Possible base form: "+word.dropLast(3);word.endsWith("ed")->"Possible base form: "+word.dropLast(2);else->""};if(f.isNotBlank())Text(f,style=MaterialTheme.typography.labelMedium)}
 @Composable private fun WordListScreen(title:String,subtitle:String,words:List<String>,onWord:(String)->Unit,onClear:()->Unit,modifier:Modifier){LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){item{Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(title,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(subtitle)}if(words.isNotEmpty())TextButton(onClick=onClear){Text("Clear")}}};if(words.isEmpty())item{WelcomeCard()};items(words.distinct()){w->ListItem(headlineContent={Text(w)},leadingContent={Icon(Icons.Default.Book,null)},modifier=Modifier.clickable{onWord(w)});HorizontalDivider()}}}
 @Composable private fun QuizScreen(onWord:(String)->Unit,modifier:Modifier){val pool=remember{OfflineDictionary.words().toList()};var answer by remember{mutableStateOf(pool.first())};var options by remember{mutableStateOf(listOf(answer))};var chosen by remember{mutableStateOf<String?>(null)};fun next(){answer=pool.random();options=(listOf(answer)+pool.filter{it!=answer}.shuffled().take(3)).shuffled();chosen=null};LaunchedEffect(Unit){next()};LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){item{Text("Vocabulary Quiz",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text("Choose the word matching the definition.");Card{Column(Modifier.padding(20.dp)){Text(OfflineDictionary.get(answer)?.definitions?.firstOrNull()?.text.orEmpty());options.forEach{o->Button(onClick={chosen=o},enabled=chosen==null,modifier=Modifier.fillMaxWidth().padding(vertical=3.dp)){Text(o)}};chosen?.let{Text(if(it==answer)"Correct! 🎉" else "The answer is "+answer,fontWeight=FontWeight.Bold);TextButton(onClick={next}){Text("Next question")};TextButton(onClick={onWord(answer)}){Text("Study word")}}}}}}}
-@Composable private fun MoreScreen(streak:Int,lookups:Int,onWord:(String)->Unit,modifier:Modifier){
+@Composable private fun MoreScreen(streak:Int,lookups:Int,onWord:(String)->Unit,modifier:Modifier,onDarkMode:(Boolean)->Unit,onLargeText:(Boolean)->Unit){
     val context=LocalContext.current
     val scope=rememberCoroutineScope()
     var category by remember{mutableStateOf(SpecialistDictionary.categories().first())}
@@ -107,7 +107,7 @@ private fun DictionaryApp(incoming: String?) {
         item{Card(shape=RoundedCornerShape(22.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.secondaryContainer)){Column(Modifier.padding(20.dp)){Text("Learning dashboard",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(streak.toString()+" day learning streak");Text(lookups.toString()+" lookups recorded")}}}
         item{OutlinedCard{Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("Vocabulary backup",fontWeight=FontWeight.Bold);Text("Move your saved vocabulary between devices.");Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={export.launch("universal-dictionary-vocabulary.txt")}){Text("Export")};OutlinedButton(onClick={import.launch(arrayOf("text/plain","text/*"))}){Text("Import")}}}}}
         item{OutlinedCard{Column(Modifier.padding(16.dp)){Text("Daily learning reminder",fontWeight=FontWeight.Bold);Text("Receive a daily Word of the Day notification at about 8:00 PM.");Button(onClick={if(android.os.Build.VERSION.SDK_INT>=33)permission.launch(android.Manifest.permission.POST_NOTIFICATIONS) else ReminderHelper.enable(context)},modifier=Modifier.padding(top=8.dp)){Text("Enable reminder")};TextButton(onClick={ReminderHelper.cancel(context)}){Text("Turn off")}}}}
-        item{Text("Specialist & Nigerian vocabulary",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}
+        item{var dark by remember{mutableStateOf(false)};var large by remember{mutableStateOf(false)};OutlinedCard{Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){Text("Accessibility & appearance",fontWeight=FontWeight.Bold);Text("Adjust readability and theme without changing system settings.");Row(verticalAlignment=Alignment.CenterVertically){Text("Dark mode",Modifier.weight(1f));Switch(checked=dark,onCheckedChange={dark=it;onDarkMode(it)})};Row(verticalAlignment=Alignment.CenterVertically){Text("Larger text",Modifier.weight(1f));Switch(checked=large,onCheckedChange={large=it;onLargeText(it)})};Text("TalkBack and system font settings remain supported.")}}}\n        item{Text("Specialist & Nigerian vocabulary",style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold)}
         items(categories){c->FilterChip(selected=category==c,onClick={category=c},label={Text(c)})}
         items(SpecialistDictionary.words(category)){w->ListItem(headlineContent={Text(w)},supportingContent={Text(category)},modifier=Modifier.clickable{onWord(w)})}
         item{OutlinedCard{Column(Modifier.padding(16.dp)){Text("Free/open data policy",fontWeight=FontWeight.Bold);Text("No proprietary dictionary credentials or databases are used. Open resources require compatible licensing and attribution.")}}}
