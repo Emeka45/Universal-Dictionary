@@ -1,6 +1,6 @@
 # Universal Dictionary
 
-Universal Dictionary is a lightweight Android language toolbox for fast lookup, vocabulary building and source comparison.
+Universal Dictionary is a lightweight Android language toolbox for fast lookup, vocabulary building and learning.
 
 ## Current capabilities
 
@@ -12,29 +12,29 @@ Universal Dictionary is a lightweight Android language toolbox for fast lookup, 
 - Personal vocabulary learning screen.
 - Android Process Text integration for selected text.
 - Light/dark system theme.
-- In-app browsing of Oxford Learner's Dictionaries, Cambridge Dictionary, Collins, Merriam-Webster, Wiktionary and WordReference.
-- Search caching during a session.
-- Separated repository/data layer ready for licensed dictionary providers.
+- Session caching for faster repeated lookups.
 - Branded Universal Dictionary launcher icon and SVG master artwork.
 - GitHub Actions debug APK build pipeline.
 
-## API strategy
+## Data strategy
 
-The baseline lookup uses the Free Dictionary API and Datamuse for suggestions. Premium/licensed providers are intentionally kept behind a separate data boundary so credentials and licensing terms are not embedded in the application.
+The app's baseline lookup uses the Free Dictionary API, with Datamuse used for typing suggestions. Universal Dictionary does **not** integrate proprietary dictionary databases or licensed dictionary APIs.
 
-Oxford, Cambridge, Collins and Merriam-Webster integrations can be added when the required credentials and permissions are available. API keys must never be shipped as plaintext secrets inside the APK.
+This keeps the project simpler: there are no Oxford, Cambridge, Collins, Merriam-Webster or WordReference credentials, contracts, subscriptions or proprietary dictionary datasets to maintain.
+
+The project can still add compatible open-data/offline resources in the future, provided their licenses permit the intended use.
 
 ## Product roadmap
 
-The architecture is prepared for:
-- richer offline dictionary datasets with compatible licensing;
-- provider comparison;
-- word-of-the-day and notifications;
-- vocabulary quizzes and streaks;
-- specialist legal, medical, scientific, business and technology terminology;
-- Nigerian English and Nigerian Pidgin resources;
-- richer pronunciation and inflection data;
-- production-grade privacy, accessibility and release hardening.
+- Offline dictionary data from appropriately licensed/open sources.
+- Word of the day and notifications.
+- Vocabulary quizzes and streaks.
+- Specialist legal, medical, scientific, business and technology terminology from compatible sources.
+- Nigerian English and Nigerian Pidgin resources from compatible/open sources.
+- Richer pronunciation and inflection data where permitted.
+- Production-grade privacy, accessibility and release hardening.
+- Automated unit and UI tests.
+- Release APK/AAB configuration.
 
 ## Build
 
