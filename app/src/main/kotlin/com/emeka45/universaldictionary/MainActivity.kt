@@ -108,7 +108,35 @@ private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLarge
 @Composable private fun EntryCard(e:DictionaryEntry,saved:Boolean,onSave:()->Unit,onSpeak:()->Unit,onCopy:()->Unit,onShare:()->Unit){Card(shape=RoundedCornerShape(24.dp)){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(e.word,style=MaterialTheme.typography.headlineLarge,fontWeight=FontWeight.Bold);e.phonetic?.let{Text(it)}};IconButton(onClick=onSpeak,enabled=e.audioUrl!=null){Icon(Icons.Default.VolumeUp,"Pronunciation")};IconButton(onClick=onSave){Icon(if(saved)Icons.Default.Bookmark else Icons.Default.BookmarkBorder,"Save")}};Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){OutlinedButton(onClick=onCopy){Icon(Icons.Default.ContentCopy,null);Spacer(Modifier.width(5.dp));Text("Copy")};OutlinedButton(onClick=onShare){Icon(Icons.Default.Share,null);Spacer(Modifier.width(5.dp));Text("Share")}};e.origin?.let{Text("Origin",fontWeight=FontWeight.Bold);Text(it)};WordForms(e.word);e.definitions.forEachIndexed{i,d->Column{Text((i+1).toString()+". "+d.partOfSpeech,fontWeight=FontWeight.Bold);Text(d.text);d.example?.let{Text("Example: "+it)};if(d.synonyms.isNotEmpty())Text("Synonyms: "+d.synonyms.joinToString(", "));if(d.antonyms.isNotEmpty())Text("Antonyms: "+d.antonyms.joinToString(", "))}};Text("Source: "+e.source,style=MaterialTheme.typography.labelMedium)}}}
 @Composable private fun WordForms(word:String){val f=when{word.endsWith("y")&&word.length>2->"Possible plural: "+word.dropLast(1)+"ies";word.endsWith("ing")->"Possible base form: "+word.dropLast(3);word.endsWith("ed")->"Possible base form: "+word.dropLast(2);else->""};if(f.isNotBlank())Text(f,style=MaterialTheme.typography.labelMedium)}
 @Composable private fun WordListScreen(title:String,subtitle:String,words:List<String>,onWord:(String)->Unit,onClear:()->Unit,modifier:Modifier){LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){item{Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(title,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(subtitle)}if(words.isNotEmpty())TextButton(onClick=onClear){Text("Clear")}}};if(words.isEmpty())item{WelcomeCard()};items(words.distinct()){w->ListItem(headlineContent={Text(w)},leadingContent={Icon(Icons.Default.Book,null)},modifier=Modifier.clickable{onWord(w)});HorizontalDivider()}}}
-@Composable private fun QuizScreen(onWord:(String)->Unit,modifier:Modifier){val pool=remember{OfflineDictionary.words().toList()};var answer by remember{mutableStateOf(pool.first())};var options by remember{mutableStateOf(listOf(answer))};var chosen by remember{mutableStateOf<String?>(null)};fun next(){answer=pool.random();options=(listOf(answer)+pool.filter{it!=answer}.shuffled().take(3)).shuffled();chosen=null};LaunchedEffect(Unit){next()};LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){item{Text("Vocabulary Quiz",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text("Choose the word matching the definition.");Card{Column(Modifier.padding(20.dp)){Text(OfflineDictionary.get(answer)?.definitions?.firstOrNull()?.text.orEmpty());options.forEach{o->Button(onClick={chosen=o},enabled=chosen==null,modifier=Modifier.fillMaxWidth().padding(vertical=3.dp)){Text(o)}};chosen?.let{Text(if(it==answer)"Correct! 🎉" else "The answer is "+answer,fontWeight=FontWeight.Bold);TextButton(onClick={next}){Text("Next question")};TextButton(onClick={onWord(answer)}){Text("Study word")}}}}}}}
+@Composable private fun QuizScreen(onWord:(String)->Unit,modifier:Modifier){
+    val pool=remember{OfflineDictionary.words().mapNotNull(OfflineDictionary::get)}
+    var mode by remember{mutableStateOf("Definition")}
+    var entry by remember{mutableStateOf(pool.first())}
+    var options by remember{mutableStateOf(emptyList<String>())}
+    var chosen by remember{mutableStateOf<String?>(null)}
+    var score by remember{mutableIntStateOf(0)}
+    var answered by remember{mutableIntStateOf(0)}
+    fun correct():String=when(mode){"Synonym"->entry.synonyms.firstOrNull();"Antonym"->entry.antonyms.firstOrNull();else->entry.word} ?: entry.word
+    fun question(){
+        entry=pool.random()
+        val answer=correct()
+        options=(listOf(answer)+pool.mapNotNull{e->when(mode){"Synonym"->e.synonyms.firstOrNull();"Antonym"->e.antonyms.firstOrNull();else->e.word}}.filter{it!=answer}.shuffled().take(3)).shuffled()
+        chosen=null
+    }
+    LaunchedEffect(mode){question()}
+    LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)){
+        item{Text("Vocabulary Lab",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text("Practice definitions, synonyms, antonyms, and spelling.")}
+        item{Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){listOf("Definition","Synonym","Antonym","Spelling").forEach{m->FilterChip(selected=mode==m,onClick={mode=m},label={Text(m)})}}}
+        item{Text("Score: $"+score+" / "+answered,style=MaterialTheme.typography.labelLarge)}
+        item{Card{Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+            Text(when(mode){"Synonym"->"Choose the synonym for “"+entry.word+"”.";"Antonym"->"Choose the antonym for “"+entry.word+"”.";"Spelling"->"Which spelling matches this word?";else->"Choose the word matching this definition."},fontWeight=FontWeight.Bold)
+            if(mode=="Definition") Text(entry.definitions.firstOrNull()?.text.orEmpty())
+            if(mode=="Spelling") Text("Select the correctly spelled form.")
+            options.forEach{o->Button(onClick={if(chosen==null){chosen=o;answered++;if(o==correct())score++}},enabled=chosen==null,modifier=Modifier.fillMaxWidth().padding(vertical=3.dp)){Text(o)}}
+            chosen?.let{Text(if(it==correct())"Correct! 🎉" else "Correct answer: "+correct(),fontWeight=FontWeight.Bold);TextButton(onClick={question()}){Text("Next question")};TextButton(onClick={onWord(entry.word)}){Text("Study word")}}
+        }}}
+    }
+}
 @Composable private fun MoreScreen(streak:Int,lookups:Int,onWord:(String)->Unit,modifier:Modifier,onDarkMode:(Boolean)->Unit,onLargeText:(Boolean)->Unit){
     val context=LocalContext.current
     val scope=rememberCoroutineScope()
