@@ -134,7 +134,7 @@ private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLarge
         if(entry==null&&error==null)item{WelcomeCard()}
         entry?.let{e->item{EntryCard(e,saved.contains(e.word.lowercase()),{onSave(e.word)},{onSpeak(e.audioUrl)},{onCopy(e)},{onShare(e)})}}
     }
-}\n@Composable private fun WordOfDayCard(repo:DictionaryRepository,onWord:(String)->Unit){val word=remember{repo.wordOfTheDay()};Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.tertiaryContainer)){Column(Modifier.padding(18.dp)){Text("WORD OF THE DAY",style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.Bold);Text(word,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);TextButton(onClick={onWord(word)}){Text("Explore today's word")}}}}
+}@Composable private fun WordOfDayCard(repo:DictionaryRepository,onWord:(String)->Unit){val word=remember{repo.wordOfTheDay()};Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(20.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.tertiaryContainer)){Column(Modifier.padding(18.dp)){Text("WORD OF THE DAY",style=MaterialTheme.typography.labelMedium,fontWeight=FontWeight.Bold);Text(word,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);TextButton(onClick={onWord(word)}){Text("Explore today's word")}}}}
 @Composable private fun WelcomeCard(){Card(Modifier.fillMaxWidth(),shape=RoundedCornerShape(24.dp),colors=CardDefaults.cardColors(containerColor=MaterialTheme.colorScheme.primaryContainer)){Column(Modifier.padding(22.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Your words, everywhere.",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text("Definitions, examples, synonyms, antonyms, pronunciation, specialist terms and learning tools.");Text("Select text in another app and choose Universal Dictionary.")}}}
 @Composable private fun EntryCard(e:DictionaryEntry,saved:Boolean,onSave:()->Unit,onSpeak:()->Unit,onCopy:()->Unit,onShare:()->Unit){
     Card(shape=RoundedCornerShape(28.dp)){Column(Modifier.padding(20.dp),verticalArrangement=Arrangement.spacedBy(15.dp)){
@@ -156,7 +156,7 @@ private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLarge
         Surface(color=MaterialTheme.colorScheme.secondaryContainer,shape=RoundedCornerShape(18.dp)){Column(Modifier.padding(13.dp)){Text("Word intelligence",fontWeight=FontWeight.Bold);Text("Related words, word forms and usage clues are grouped here to help you learn beyond a single definition.",style=MaterialTheme.typography.bodySmall)}}
         Text("Source: ${e.source}",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
     }}
-}\n@Composable private fun WordForms(word:String){val f=when{word.endsWith("y")&&word.length>2->"Possible plural: "+word.dropLast(1)+"ies";word.endsWith("ing")->"Possible base form: "+word.dropLast(3);word.endsWith("ed")->"Possible base form: "+word.dropLast(2);else->""};if(f.isNotBlank())Text(f,style=MaterialTheme.typography.labelMedium)}
+}@Composable private fun WordForms(word:String){val f=when{word.endsWith("y")&&word.length>2->"Possible plural: "+word.dropLast(1)+"ies";word.endsWith("ing")->"Possible base form: "+word.dropLast(3);word.endsWith("ed")->"Possible base form: "+word.dropLast(2);else->""};if(f.isNotBlank())Text(f,style=MaterialTheme.typography.labelMedium)}
 @Composable private fun WordListScreen(title:String,subtitle:String,words:List<String>,onWord:(String)->Unit,onClear:()->Unit,modifier:Modifier){LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){item{Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(title,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(subtitle)}if(words.isNotEmpty())TextButton(onClick=onClear){Text("Clear")}}};if(words.isEmpty())item{WelcomeCard()};items(words.distinct()){w->ListItem(headlineContent={Text(w)},leadingContent={Icon(Icons.Default.Book,null)},modifier=Modifier.clickable{onWord(w)});HorizontalDivider()}}}
 @Composable private fun QuizScreen(onWord:(String)->Unit,modifier:Modifier){
     val pool=remember{OfflineDictionary.words().mapNotNull(OfflineDictionary::get)}
@@ -185,7 +185,7 @@ private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLarge
             chosen?.let{Text(if(it==correct())"Correct! 🎉" else "Correct answer: ${correct()}",fontWeight=FontWeight.Bold);Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Button(onClick={next()}){Text("Next")};OutlinedButton(onClick={onWord(answer.word)}){Text("Study word")}}}
         }}}
     }
-}\n@Composable private fun MoreScreen(streak:Int,lookups:Int,onWord:(String)->Unit,modifier:Modifier,onDarkMode:(Boolean)->Unit,onLargeText:(Boolean)->Unit){
+}@Composable private fun MoreScreen(streak:Int,lookups:Int,onWord:(String)->Unit,modifier:Modifier,onDarkMode:(Boolean)->Unit,onLargeText:(Boolean)->Unit){
     val context=LocalContext.current
     val scope=rememberCoroutineScope()
     var category by remember{mutableStateOf(SpecialistDictionary.categories().first())}
