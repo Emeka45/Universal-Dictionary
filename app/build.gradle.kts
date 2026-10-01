@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 android {
     namespace = "com.emeka45.universaldictionary"
@@ -13,7 +14,6 @@ android {
         versionName = "1.0.0"
     }
     buildFeatures { compose = true; buildConfig = true }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
     buildTypes { release { isMinifyEnabled = false } }
 }
 dependencies {
