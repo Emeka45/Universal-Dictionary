@@ -1,45 +1,71 @@
 # Universal Dictionary
 
-Universal Dictionary is a lightweight Android language toolbox for fast lookup, vocabulary building and learning.
+A lightweight, beautiful Android dictionary and vocabulary-learning toolbox built for everyday lookup and low-resource devices.
 
-## Current capabilities
+## Included now
 
+### Dictionary
+- Fast online lookup through the Free Dictionary API.
+- Local offline core vocabulary for useful first-launch/offline lookups.
 - Definitions, parts of speech and examples.
-- Phonetics and pronunciation audio when supplied.
-- Synonyms and antonyms.
-- Typing suggestions and spelling assistance.
-- Persistent saved words and search history.
-- Personal vocabulary learning screen.
-- Android Process Text integration for selected text.
-- Light/dark system theme.
-- Session caching for faster repeated lookups.
-- Branded Universal Dictionary launcher icon and SVG master artwork.
-- GitHub Actions debug APK build pipeline.
+- Phonetics and supplied pronunciation audio.
+- Android Text-to-Speech fallback when audio is unavailable.
+- Synonyms and antonyms when supplied.
+- Smart suggestions through Datamuse with local fallback.
+- Spelling recovery and typo suggestions.
+- Session caching plus persistent history.
 
-## Data strategy
+### Personal vocabulary
+- Saved words.
+- Search history.
+- Word of the Day.
+- Daily learning streak.
+- Lookup statistics.
+- Vocabulary export/import.
+- Copy and share complete entries.
+- Android Process Text integration.
+- Daily optional Word of the Day notification.
 
-The app's baseline lookup uses the Free Dictionary API, with Datamuse used for typing suggestions. Universal Dictionary does **not** integrate proprietary dictionary databases or licensed dictionary APIs.
+### Learning
+- Vocabulary quiz.
+- Personal learning dashboard.
+- Possible word-form hints.
+- Specialist vocabulary categories:
+  - Legal
+  - Medical
+  - Science
+  - Technology
+  - Business
+  - Academic
+  - Nigerian English
+  - Nigerian Pidgin
 
-This keeps the project simpler: there are no Oxford, Cambridge, Collins, Merriam-Webster or WordReference credentials, contracts, subscriptions or proprietary dictionary datasets to maintain.
+### Privacy/licensing strategy
+Universal Dictionary deliberately avoids proprietary dictionary databases and provider credentials. Its built-in specialist/Nigerian material is original project content. Future open-data additions must be reviewed for license compatibility and attribution requirements.
 
-The project can still add compatible open-data/offline resources in the future, provided their licenses permit the intended use.
+For example, Wiktionary states that its original entry text is available under CC BY-SA and GFDL, with attribution/share-alike obligations; its individual media can have separate licenses. Any future Wiktionary-derived offline pack therefore needs proper attribution and license handling.
 
-## Product roadmap
+See [PRIVACY.md](PRIVACY.md).
 
-- Offline dictionary data from appropriately licensed/open sources.
-- Word of the day and notifications.
-- Vocabulary quizzes and streaks.
-- Specialist legal, medical, scientific, business and technology terminology from compatible sources.
-- Nigerian English and Nigerian Pidgin resources from compatible/open sources.
-- Richer pronunciation and inflection data where permitted.
-- Production-grade privacy, accessibility and release hardening.
-- Automated unit and UI tests.
-- Release APK/AAB configuration.
+## Android
+- Kotlin + Jetpack Compose.
+- Minimum Android API 26.
+- System light/dark theme.
+- U/open-book launcher branding.
+- Low-dependency architecture suitable for budget devices.
+- GitHub Actions build pipeline.
+- Unit tests for bundled dictionary resources.
 
 ## Build
+Use JDK 17+ and run:
 
-The project uses Android Gradle Plugin 8.9.1, Kotlin 2.1.21 and Compose. Build with JDK 17+:
+    ./gradlew assembleDebug
 
-`gradle assembleDebug`
+The GitHub Actions workflow builds the debug APK and can be extended for release APK/AAB signing once release credentials are supplied.
 
-GitHub Actions builds and publishes the debug APK as a workflow artifact.
+## Data sources
+- Free Dictionary API: primary network definitions.
+- Datamuse: typing/suggestion assistance.
+- Original Universal Dictionary offline and specialist cores.
+
+No Oxford, Cambridge, Collins, Merriam-Webster or WordReference credentials are required.
