@@ -24,6 +24,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
         val word = input.trim().lowercase(Locale.US)
         if (word.isBlank()) return@withContext Result.failure(IllegalArgumentException("Enter a word."))
         synchronized(cache) { cache[word] }?.let { saveHistory(word); return@withContext Result.success(it) }
+        OfflineDictionary.get(word)?.let { saveHistory(word); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
         runCatching {
             val encoded = URLEncoder.encode(word, "UTF-8")
             val request = Request.Builder()
@@ -53,6 +54,13 @@ class DictionaryRepository(private val context: Context, private val client: OkH
             }
         }.getOrDefault(emptyList())
     }
+
+    suspend fun streak(): Int = context.dictionaryDataStore.data.first()[STREAK] ?: 0
+    suspend fun lookupCount(): Int = context.dictionaryDataStore.data.first()[LOOKUPS] ?: 0
+    suspend fun clearHistory() { context.dictionaryDataStore.edit { it.remove(HISTORY) } }
+    suspend fun clearSaved() { context.dictionaryDataStore.edit { it.remove(SAVED) } }
+    fun wordOfTheDay(): String { val words=(OfflineDictionary.words()+listOf("adroit","audacious","candid","cogent","dormant","fortuitous","lucid","nuance","pragmatic","tenacious")).sorted(); return words[(System.currentTimeMillis()/86400000L % words.size).toInt()] }
+    suspend fun recordLearning() { val today=System.currentTimeMillis()/86400000L; context.dictionaryDataStore.edit { p -> val last=p[LAST_DAY]; if(last!=today){ val old=p[STREAK]?:0; p[STREAK]=if(last==today-1) old+1 else 1; p[LAST_DAY]=today }; p[LOOKUPS]=(p[LOOKUPS]?:0)+1 } }
 
     suspend fun savedWords(): Set<String> = context.dictionaryDataStore.data.first()[SAVED].orEmpty()
     suspend fun history(): List<String> = context.dictionaryDataStore.data.first()[HISTORY].orEmpty().toList().asReversed()
@@ -127,5 +135,8 @@ class DictionaryRepository(private val context: Context, private val client: OkH
     companion object {
         private val SAVED = stringSetPreferencesKey("saved_words")
         private val HISTORY = stringSetPreferencesKey("history")
+        private val STREAK = intPreferencesKey("streak")
+        private val LOOKUPS = intPreferencesKey("lookups")
+        private val LAST_DAY = longPreferencesKey("last_day")
     }
 }
