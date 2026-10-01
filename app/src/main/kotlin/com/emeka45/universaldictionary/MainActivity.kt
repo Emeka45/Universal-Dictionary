@@ -47,7 +47,19 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DictionarySettingsHost(incoming:String?) {\n    val context=LocalContext.current\n    val settings=remember{SettingsStore(context.applicationContext)}\n    var dark by remember{mutableStateOf(settings.darkMode())}\n    var large by remember{mutableStateOf(settings.largeText())}\n    UniversalDictionaryTheme(darkOverride=dark,largeText=large){\n        DictionaryApp(incoming,{dark=it;settings.setDarkMode(it)},{large=it;settings.setLargeText(it)})\n    }\n}\n\n@OptIn(ExperimentalMaterial3Api::class)\n@Composable\nprivate fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLargeText:(Boolean)->Unit) {
+private fun DictionarySettingsHost(incoming:String?) {
+    val context=LocalContext.current
+    val settings=remember{SettingsStore(context.applicationContext)}
+    var dark by remember{mutableStateOf(settings.darkMode())}
+    var large by remember{mutableStateOf(settings.largeText())}
+    UniversalDictionaryTheme(darkOverride=dark,largeText=large){
+        DictionaryApp(incoming,{dark=it;settings.setDarkMode(it)},{large=it;settings.setLargeText(it)})
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLargeText:(Boolean)->Unit) {
     val context=LocalContext.current
     val repo=remember{DictionaryRepository(context.applicationContext)}
     val scope=rememberCoroutineScope()
