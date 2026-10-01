@@ -1,31 +1,45 @@
 # Universal Dictionary
 
-Universal Dictionary is a lightweight Android language toolbox focused on fast lookup, learning, and source comparison.
+Universal Dictionary is a lightweight Android language toolbox for fast lookup, vocabulary building and source comparison.
 
-## Included in the first build
+## Current capabilities
+
 - Definitions, parts of speech and examples.
-- Phonetics and pronunciation audio when supplied by the data source.
+- Phonetics and pronunciation audio when supplied.
 - Synonyms and antonyms.
-- Typing suggestions and spelling assistance through Datamuse.
-- Saved-word state during the current app session.
-- Android Process Text integration: select text in another app and choose Universal Dictionary.
-- In-app dictionary browsing for Oxford Learner's Dictionaries, Cambridge Dictionary, Collins, Merriam-Webster, Wiktionary and WordReference.
-- A deliberately separated data layer so licensed dictionary APIs can be added without rewriting the UI.
+- Typing suggestions and spelling assistance.
+- Persistent saved words and search history.
+- Personal vocabulary learning screen.
+- Android Process Text integration for selected text.
+- Light/dark system theme.
+- In-app browsing of Oxford Learner's Dictionaries, Cambridge Dictionary, Collins, Merriam-Webster, Wiktionary and WordReference.
+- Search caching during a session.
+- Separated repository/data layer ready for licensed dictionary providers.
+- Branded Universal Dictionary launcher icon and SVG master artwork.
+- GitHub Actions debug APK build pipeline.
 
 ## API strategy
-The primary lookup uses the Free Dictionary API, whose documented response includes definitions, phonetics, audio, examples, synonyms and antonyms. Datamuse provides suggestions and word-finding capabilities. citeturn1search1turn1search0
 
-Premium/licensed adapters are kept separate from the UI:
-- Oxford Dictionaries API provides dictionary, translation and lexical data; its current authentication uses an App ID and App Key. citeturn0search1turn0search9
-- Cambridge offers a Dictionary API and licensed datasets. citeturn0search2turn0search17
-- Collins offers dictionary APIs covering definitions, translations, examples, phrases and audio; its current English-only pricing lists up to 5,000 calls/month free. citeturn0search0
-- Merriam-Webster provides dictionary/thesaurus APIs, but its published terms distinguish non-commercial use from advertising-supported/commercial apps. citeturn1search3turn1search12
+The baseline lookup uses the Free Dictionary API and Datamuse for suggestions. Premium/licensed providers are intentionally kept behind a separate data boundary so credentials and licensing terms are not embedded in the application.
 
-Keys are not embedded in this repository. Licensed content will only be integrated after the required credentials and permissions are supplied.
+Oxford, Cambridge, Collins and Merriam-Webster integrations can be added when the required credentials and permissions are available. API keys must never be shipped as plaintext secrets inside the APK.
+
+## Product roadmap
+
+The architecture is prepared for:
+- richer offline dictionary datasets with compatible licensing;
+- provider comparison;
+- word-of-the-day and notifications;
+- vocabulary quizzes and streaks;
+- specialist legal, medical, scientific, business and technology terminology;
+- Nigerian English and Nigerian Pidgin resources;
+- richer pronunciation and inflection data;
+- production-grade privacy, accessibility and release hardening.
 
 ## Build
-The project uses Android Gradle Plugin 8.9.1, Kotlin 2.1.21 and Compose. Build locally with JDK 17+:
+
+The project uses Android Gradle Plugin 8.9.1, Kotlin 2.1.21 and Compose. Build with JDK 17+:
 
 `gradle assembleDebug`
 
-GitHub Actions builds the debug APK on pushes and pull requests.
+GitHub Actions builds and publishes the debug APK as a workflow artifact.
