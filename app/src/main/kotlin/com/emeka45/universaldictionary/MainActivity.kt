@@ -157,7 +157,38 @@ private fun DictionaryApp(incoming: String?, onDarkMode:(Boolean)->Unit, onLarge
         Text("Source: ${e.source}",style=MaterialTheme.typography.labelMedium,color=MaterialTheme.colorScheme.onSurfaceVariant)
     }}
 }@Composable private fun WordForms(word:String){val f=when{word.endsWith("y")&&word.length>2->"Possible plural: "+word.dropLast(1)+"ies";word.endsWith("ing")->"Possible base form: "+word.dropLast(3);word.endsWith("ed")->"Possible base form: "+word.dropLast(2);else->""};if(f.isNotBlank())Text(f,style=MaterialTheme.typography.labelMedium)}
-@Composable private fun WordListScreen(title:String,subtitle:String,words:List<String>,onWord:(String)->Unit,onClear:()->Unit,modifier:Modifier){LazyColumn(modifier.fillMaxSize(),contentPadding=PaddingValues(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){item{Row(verticalAlignment=Alignment.CenterVertically){Column(Modifier.weight(1f)){Text(title,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text(subtitle)}if(words.isNotEmpty())TextButton(onClick=onClear){Text("Clear")}}};if(words.isEmpty())item{WelcomeCard()};items(words.distinct()){w->ListItem(headlineContent={Text(w)},leadingContent={Icon(Icons.Default.Book,null)},modifier=Modifier.clickable{onWord(w)});HorizontalDivider()}}}
+@Composable
+private fun WordListScreen(title:String,subtitle:String,words:List<String>,onWord:(String)->Unit,onClear:()->Unit,modifier:Modifier){
+    LazyColumn(
+        modifier.fillMaxSize(),
+        contentPadding=PaddingValues(16.dp),
+        verticalArrangement=Arrangement.spacedBy(10.dp)
+    ){
+        item{
+            Row(verticalAlignment=Alignment.CenterVertically){
+                Column(Modifier.weight(1f)){
+                    Text(title,style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
+                    Text(subtitle)
+                }
+                if(words.isNotEmpty()) TextButton(onClick=onClear){Text("Clear")}
+            }
+        }
+        if(words.isEmpty()) item{WelcomeCard()}
+        items(words.distinct()){word->
+            ElevatedCard(
+                modifier=Modifier.fillMaxWidth().clickable{onWord(word)},
+                shape=RoundedCornerShape(18.dp)
+            ){
+                ListItem(
+                    headlineContent={Text(word,fontWeight=FontWeight.SemiBold)},
+                    leadingContent={Icon(Icons.Default.MenuBook,null)},
+                    trailingContent={Icon(Icons.Default.ChevronRight,null)}
+                )
+            }
+        }
+    }
+}
+
 @Composable private fun QuizScreen(onWord:(String)->Unit,modifier:Modifier){
     val pool=remember{OfflineDictionary.words().mapNotNull(OfflineDictionary::get)}
     var mode by remember{mutableStateOf("Definition")}
