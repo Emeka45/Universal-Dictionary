@@ -22,10 +22,4 @@ data class DictionaryEntry(
     val antonyms: List<String> get() = definitions.flatMap { it.antonyms }.distinct()
 }
 
-data class SourceDictionary(
-    val name: String,
-    val description: String,
-    val urlFor: (String) -> String
-)
-
 data class WordHistory(val word: String, val timestamp: Long)
