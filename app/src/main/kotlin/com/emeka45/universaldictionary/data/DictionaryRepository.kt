@@ -27,6 +27,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
         if (word.isBlank()) return@withContext Result.failure(IllegalArgumentException("Enter a word."))
         synchronized(cache) { cache[word] }?.let { saveHistory(word); return@withContext Result.success(it) }
         OfflineDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
+        ExpandedOfflineDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
         SpecialistDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
         runCatching {
             val encoded = URLEncoder.encode(word, "UTF-8")
@@ -43,6 +44,28 @@ class DictionaryRepository(private val context: Context, private val client: OkH
                 saveHistory(word)
                 recordLearning()
             }
+        }.recoverCatching {
+            lookupExpandedOnline(word) ?: run {
+                val near = nearest(word)
+                if (near != null) error("No entry for \"$word\". Did you mean \"$near\"?")
+                error("No entry found for \"$word\". Check the spelling.")
+            }
+        }.also {
+            synchronized(cache) { cache[word] = it }
+            saveHistory(word)
+            recordLearning()
+        }
+    }
+
+    private fun lookupExpandedOnline(word:String): DictionaryEntry? {
+        val encoded = URLEncoder.encode(word, "UTF-8")
+        val request = Request.Builder()
+            .url("https://englishdictionaryapi.com/api/v1/words/$encoded")
+            .header("Accept", "application/json")
+            .build()
+        return client.newCall(request).execute().use { response ->
+            if (!response.isSuccessful) return@use null
+            parseExpanded(response.body?.string() ?: "{}", word)
         }
     }
 
@@ -58,7 +81,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
             }
         }.getOrElse {
             WordSearch.localEntries(input).map { it.word } +
-                (OfflineDictionary.words()+SpecialistDictionary.allWords()).filter { it.startsWith(input.trim().lowercase(Locale.US)) }
+                (OfflineDictionary.words()+ExpandedOfflineDictionary.words()+SpecialistDictionary.allWords()).filter { it.startsWith(input.trim().lowercase(Locale.US)) }
         }.distinct().take(8)
     }
 
@@ -107,7 +130,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
         }
     }
 
-    private fun nearest(word:String):String? { val all=OfflineDictionary.words()+SpecialistDictionary.categories().flatMap{SpecialistDictionary.words(it)}+cache.keys; return all.minByOrNull{distance(word,it)}?.takeIf{distance(word,it)<=maxOf(2,word.length/3)} }    private fun distance(a:String,b:String):Int { val d=IntArray(b.length+1){it}; for(i in a.indices){var prev=d[0];d[0]=i+1;for(j in b.indices){val cur=d[j+1];d[j+1]=minOf(d[j+1]+1,d[j]+1,prev+if(a[i]==b[j])0 else 1);prev=cur}};return d[b.length] }    private fun parse(json: String): List<DictionaryEntry> {
+    private fun nearest(word:String):String? { val all=OfflineDictionary.words()+ExpandedOfflineDictionary.words()+SpecialistDictionary.categories().flatMap{SpecialistDictionary.words(it)}+cache.keys; return all.minByOrNull{distance(word,it)}?.takeIf{distance(word,it)<=maxOf(2,word.length/3)} }    private fun distance(a:String,b:String):Int { val d=IntArray(b.length+1){it}; for(i in a.indices){var prev=d[0];d[0]=i+1;for(j in b.indices){val cur=d[j+1];d[j+1]=minOf(d[j+1]+1,d[j]+1,prev+if(a[i]==b[j])0 else 1);prev=cur}};return d[b.length] }    private fun parse(json: String): List<DictionaryEntry> {
         val root = JSONArray(json)
         return buildList {
             for (i in 0 until root.length()) {
@@ -148,6 +171,33 @@ class DictionaryRepository(private val context: Context, private val client: OkH
                 ))
             }
         }
+    }
+
+    private fun parseExpanded(json:String, fallbackWord:String): DictionaryEntry? {
+        val root = org.json.JSONObject(json)
+        val word = root.optString("word", fallbackWord)
+        val pronunciation = root.optJSONObject("pronunciation")
+        val groups = root.optJSONArray("partsOfSpeech")
+        val defs = mutableListOf<Definition>()
+        if (groups != null) for (i in 0 until groups.length()) {
+            val g = groups.optJSONObject(i) ?: continue
+            val pos = g.optString("partOfSpeech", "definition")
+            val senses = g.optJSONArray("senses") ?: continue
+            for (j in 0 until senses.length()) {
+                val s = senses.optJSONObject(j) ?: continue
+                val text = s.optString("definition").takeIf { it.isNotBlank() } ?: continue
+                defs += Definition(pos, text, s.optString("example").takeIf { it.isNotBlank() }, source="English Dictionary API")
+            }
+        }
+        if (defs.isEmpty()) return null
+        return DictionaryEntry(
+            word=word,
+            phonetic=pronunciation?.optString("ipa")?.takeIf { it.isNotBlank() },
+            audioUrl=pronunciation?.optString("audioUrl")?.takeIf { it.isNotBlank() },
+            origin=root.optString("etymology").takeIf { it.isNotBlank() },
+            definitions=defs,
+            source="English Dictionary API"
+        )
     }
 
     private fun strings(a: JSONArray?): List<String> =
