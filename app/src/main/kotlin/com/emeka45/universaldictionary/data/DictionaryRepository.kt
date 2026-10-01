@@ -26,7 +26,8 @@ class DictionaryRepository(private val context: Context, private val client: OkH
         val word = input.trim().lowercase(Locale.US)
         if (word.isBlank()) return@withContext Result.failure(IllegalArgumentException("Enter a word."))
         synchronized(cache) { cache[word] }?.let { saveHistory(word); return@withContext Result.success(it) }
-        OfflineDictionary.get(word)?.let { saveHistory(word); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
+        OfflineDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
+        SpecialistDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
         runCatching {
             val encoded = URLEncoder.encode(word, "UTF-8")
             val request = Request.Builder()
