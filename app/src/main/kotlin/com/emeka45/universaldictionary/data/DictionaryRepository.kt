@@ -63,6 +63,20 @@ class DictionaryRepository(private val context: Context, private val client: OkH
     suspend fun lookupCount(): Int = context.dictionaryDataStore.data.first()[LOOKUPS] ?: 0
     suspend fun clearHistory() { context.dictionaryDataStore.edit { it.remove(HISTORY) } }
     suspend fun clearSaved() { context.dictionaryDataStore.edit { it.remove(SAVED) } }
+    suspend fun exportVocabulary(): String = buildString {
+        appendLine("# Universal Dictionary Vocabulary")
+        appendLine("# Saved words")
+        savedWords().sorted().forEach(::appendLine)
+        appendLine("# Recent history")
+        history().forEach(::appendLine)
+    }
+    suspend fun importVocabulary(text:String) {
+        val words=text.lineSequence().map{it.trim().lowercase(Locale.US)}
+            .filter{it.length in 2..40 && it.all{c->c.isLetter() || c=='-' || c=='\''}}.toSet()
+        if(words.isEmpty()) return
+        context.dictionaryDataStore.edit{p->p[SAVED]=p[SAVED].orEmpty().plus(words)}
+    }
+
     fun wordOfTheDay(): String { val words=(OfflineDictionary.words()+listOf("adroit","audacious","candid","cogent","dormant","fortuitous","lucid","nuance","pragmatic","tenacious")).sorted(); return words[(System.currentTimeMillis()/86400000L % words.size).toInt()] }
     suspend fun recordLearning() { val today=System.currentTimeMillis()/86400000L; context.dictionaryDataStore.edit { p -> val last=p[LAST_DAY]; if(last!=today){ val old=p[STREAK]?:0; p[STREAK]=if(last==today-1) old+1 else 1; p[LAST_DAY]=today }; p[LOOKUPS]=(p[LOOKUPS]?:0)+1 } }
 
