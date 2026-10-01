@@ -23,7 +23,7 @@ class DictionaryRepository(private val context: Context, private val client: OkH
     private val cache = LinkedHashMap<String, DictionaryEntry>(50, 0.75f, true)
 
     suspend fun lookup(input: String): Result<DictionaryEntry> = withContext(Dispatchers.IO) {
-        val word = input.trim().lowercase(Locale.US)
+        val word = WordSearch.normalize(input)
         if (word.isBlank()) return@withContext Result.failure(IllegalArgumentException("Enter a word."))
         synchronized(cache) { cache[word] }?.let { saveHistory(word); return@withContext Result.success(it) }
         OfflineDictionary.get(word)?.let { saveHistory(word); recordLearning(); synchronized(cache) { cache[word] = it }; return@withContext Result.success(it) }
@@ -56,7 +56,10 @@ class DictionaryRepository(private val context: Context, private val client: OkH
                 val arr = JSONArray(response.body?.string() ?: "[]")
                 buildList { for (i in 0 until arr.length()) arr.optJSONObject(i)?.optString("word")?.takeIf(String::isNotBlank)?.let(::add) }
             }
-        }.getOrElse { (OfflineDictionary.words()+SpecialistDictionary.categories().flatMap { SpecialistDictionary.words(it) }).filter { it.startsWith(input.trim().lowercase(Locale.US)) }.distinct().take(8) }
+        }.getOrElse {
+            WordSearch.localEntries(input).map { it.word } +
+                (OfflineDictionary.words()+SpecialistDictionary.allWords()).filter { it.startsWith(input.trim().lowercase(Locale.US)) }
+        }.distinct().take(8)
     }
 
     suspend fun streak(): Int = context.dictionaryDataStore.data.first()[STREAK] ?: 0
