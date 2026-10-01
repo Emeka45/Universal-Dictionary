@@ -11,7 +11,7 @@ object WordSearch {
         val out=linkedSetOf(w)
         if(w.endsWith("ies")&&w.length>4) out += w.dropLast(3)+"y"
         if(w.endsWith("ves")&&w.length>4) { out += w.dropLast(3)+"f"; out += w.dropLast(3)+"fe" }
-        if(w.endsWith("ing")&&w.length>5) { out += w.dropLast(3); out += w.dropLast(3)+"e" }
+        if(w.endsWith("ing")&&w.length>5) { out += w.dropLast(3); out += w.dropLast(3)+"e"; val base=w.dropLast(3); if(base.length>2 && base.last()==base[base.length-2]) out += base.dropLast(1) }
         if(w.endsWith("ed")&&w.length>4) { out += w.dropLast(2); out += w.dropLast(1) }
         if(w.endsWith("es")&&w.length>4) out += w.dropLast(2)
         if(w.endsWith("s")&&w.length>3) out += w.dropLast(1)
