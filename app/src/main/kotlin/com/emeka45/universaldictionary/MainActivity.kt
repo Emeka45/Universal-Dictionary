@@ -66,7 +66,7 @@ private fun DictionaryApp(incoming: String?) {
     Scaffold(topBar={TopAppBar(title={Column{Text("Universal Dictionary",fontWeight=FontWeight.Bold);Text("Words • Learning • Discovery",style=MaterialTheme.typography.labelSmall)}})},bottomBar={NavigationBar{val labels=listOf("Home","Saved","History","Quiz","More");val icons=listOf(Icons.Default.Home,Icons.Default.Bookmark,Icons.Default.History,Icons.Default.Quiz,Icons.Default.MoreHoriz);labels.forEachIndexed{i,l->NavigationBarItem(selected=tab==i,onClick={tab=i},icon={Icon(icons[i],null)},label={Text(l)})}}}){
         val padding=PaddingValues(bottom=80.dp)
         when(tab){
-            0->HomeScreen(query,{query=it},suggestions,{suggestions=it},loading,error,entry,saved,{w->scope.launch{saved=repo.toggleSaved(w);refresh()}},{lookup()},{lookup(it)},{url->playAudio(url)},{e->copy(e)},{e->share(e)},repo,Modifier.padding(padding))
+            0->HomeScreen(query,{query=it},suggestions,{suggestions=it},loading,error,entry,saved,{w->scope.launch{saved=repo.toggleSaved(w);refresh()}},{lookup()},{lookup(it)},{url->if(url.isNullOrBlank()) tts.speak(entry?.word.orEmpty(),TextToSpeech.QUEUE_FLUSH,null,"dictionary") else playAudio(url)},{e->copy(e)},{e->share(e)},repo,Modifier.padding(padding))
             1->WordListScreen("Saved words","Your personal vocabulary collection",saved.toList().sorted(),{lookup(it);tab=0},{scope.launch{repo.clearSaved();refresh()}},Modifier.padding(padding))
             2->WordListScreen("Search history","Your latest lookups",history,{lookup(it);tab=0},{scope.launch{repo.clearHistory();refresh()}},Modifier.padding(padding))
             3->QuizScreen({lookup(it);tab=0},Modifier.padding(padding))
